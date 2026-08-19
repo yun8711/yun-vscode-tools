@@ -8,6 +8,10 @@ const HAS_INITIALIZED_KEY = 'yunVscodeTools.hasInitialized';
 const MAC_COPY_FILES_HELPER = 'yun-copy-files-macos';
 const COMMIT_LOG_SEPARATOR = '\x1f';
 const COMMIT_RECORD_SEPARATOR = '\x1e';
+const ARCHIVE_FORMATS: ArchiveFormat[] = [
+  { label: 'zip', description: '.zip', id: 'zip', extension: '.zip' },
+  { label: 'tar.gz', description: '.tar.gz', id: 'tar.gz', extension: '.tar.gz' },
+];
 const execFileAsync = promisify(execFile);
 let extensionContext: vscode.ExtensionContext;
 
@@ -29,6 +33,11 @@ interface UnpushedCommit extends vscode.QuickPickItem {
   body: string;
 }
 
+interface ArchiveFormat extends vscode.QuickPickItem {
+  id: 'zip' | 'tar.gz';
+  extension: '.zip' | '.tar.gz';
+}
+
 export function activate(context: vscode.ExtensionContext) {
   extensionContext = context;
 
@@ -37,6 +46,8 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('yunVscodeTools.disableExplorerAutoReveal', () => disableExplorerAutoReveal(true)),
     vscode.commands.registerCommand('yunVscodeTools.copyFile', copyFile),
     vscode.commands.registerCommand('yunVscodeTools.editCommitMessage', editCommitMessage),
+    vscode.commands.registerCommand('yunVscodeTools.compressResources', compressResources),
+    vscode.commands.registerCommand('yunVscodeTools.compressChildren', compressChildren),
   );
 
   void initializeExtension(context);
@@ -145,6 +156,239 @@ async function copyMacFilesToClipboard(files: vscode.Uri[]) {
   const helperUri = vscode.Uri.joinPath(extensionContext.extensionUri, 'bin', MAC_COPY_FILES_HELPER);
 
   await execFileAsync(helperUri.fsPath, files.map((file) => file.fsPath));
+}
+
+async function compressResources(resource?: vscode.Uri, selectedResources?: vscode.Uri[]) {
+  const resources = getExplorerFileUris(resource, selectedResources);
+
+  if (resources.length === 0) {
+    vscode.window.showInformationMessage('请选择要压缩的文件或目录');
+    return;
+  }
+
+  try {
+    const existingResources = await filterExistingResources(resources);
+
+    if (existingResources.length === 0) {
+      vscode.window.showInformationMessage('未找到可压缩的文件或目录');
+      return;
+    }
+
+    const parentDir = getSharedParentDir(existingResources);
+
+    if (!parentDir) {
+      vscode.window.showWarningMessage('多选压缩时，请选择同一目录下的文件或目录');
+      return;
+    }
+
+    const format = await pickArchiveFormat();
+
+    if (!format) {
+      return;
+    }
+
+    const defaultBaseName = existingResources.length === 1 ? getArchiveBaseName(existingResources[0]) : 'archive';
+    const outputFile = await pickArchiveOutputFile(parentDir, defaultBaseName, format);
+
+    if (!outputFile) {
+      return;
+    }
+
+    await createArchive(format, parentDir, existingResources.map((uri) => path.basename(uri.fsPath)), outputFile);
+    showArchiveCreatedMessage(outputFile);
+  } catch (error) {
+    vscode.window.showErrorMessage(`压缩失败：${getErrorMessage(error)}`);
+  }
+}
+
+async function compressChildren(resource?: vscode.Uri) {
+  if (!resource || resource.scheme !== 'file') {
+    vscode.window.showInformationMessage('请选择要压缩子文件的目录');
+    return;
+  }
+
+  try {
+    const stat = await vscode.workspace.fs.stat(resource);
+
+    if ((stat.type & vscode.FileType.Directory) !== vscode.FileType.Directory) {
+      vscode.window.showInformationMessage('压缩子文件仅支持目录');
+      return;
+    }
+
+    const children = await vscode.workspace.fs.readDirectory(resource);
+
+    if (children.length === 0) {
+      vscode.window.showInformationMessage('目录为空，无法压缩子文件');
+      return;
+    }
+
+    const format = await pickArchiveFormat();
+
+    if (!format) {
+      return;
+    }
+
+    const parentDir = path.dirname(resource.fsPath);
+    const projectName = await getProjectArchiveName(resource);
+    const outputFile = await pickArchiveOutputFile(parentDir, `${projectName}_${formatTimestamp(new Date())}`, format);
+
+    if (!outputFile) {
+      return;
+    }
+
+    await createArchive(format, resource.fsPath, children.map(([name]) => name), outputFile);
+    showArchiveCreatedMessage(outputFile);
+  } catch (error) {
+    vscode.window.showErrorMessage(`压缩子文件失败：${getErrorMessage(error)}`);
+  }
+}
+
+async function filterExistingResources(uris: vscode.Uri[]) {
+  const resources: vscode.Uri[] = [];
+
+  for (const uri of uris) {
+    await vscode.workspace.fs.stat(uri);
+    resources.push(uri);
+  }
+
+  return resources;
+}
+
+function getSharedParentDir(uris: vscode.Uri[]) {
+  const [first] = uris;
+
+  if (!first) {
+    return undefined;
+  }
+
+  const parentDir = path.dirname(first.fsPath);
+  return uris.every((uri) => path.dirname(uri.fsPath) === parentDir) ? parentDir : undefined;
+}
+
+function getArchiveBaseName(uri: vscode.Uri) {
+  const name = path.basename(uri.fsPath);
+  const parsed = path.parse(name);
+
+  return parsed.name || name;
+}
+
+async function pickArchiveFormat() {
+  return vscode.window.showQuickPick<ArchiveFormat>(ARCHIVE_FORMATS, {
+    placeHolder: '选择压缩格式',
+  });
+}
+
+async function pickArchiveOutputFile(outputDir: string, baseName: string, format: ArchiveFormat) {
+  const defaultFileName = await getUniqueArchiveFileName(outputDir, sanitizeFileName(baseName), format.extension);
+  const fileName = await vscode.window.showInputBox({
+    title: '压缩',
+    prompt: '输入压缩包文件名',
+    value: defaultFileName,
+    ignoreFocusOut: true,
+    validateInput: (value) => {
+      const trimmed = value.trim();
+
+      if (!trimmed) {
+        return '文件名不能为空';
+      }
+
+      if (trimmed.includes('/') || trimmed.includes('\\')) {
+        return '文件名不能包含路径分隔符';
+      }
+
+      return undefined;
+    },
+  });
+
+  if (fileName === undefined) {
+    return undefined;
+  }
+
+  const normalizedFileName = ensureArchiveExtension(fileName.trim(), format.extension);
+  return getUniqueArchivePath(outputDir, normalizedFileName, format.extension);
+}
+
+async function createArchive(format: ArchiveFormat, cwd: string, entries: string[], outputFile: string) {
+  if (format.id === 'zip') {
+    // -r 递归压缩目录；输出文件使用绝对路径，压缩内容仅保留相对条目名。
+    await execFileAsync('zip', ['-r', outputFile, ...entries], { cwd, maxBuffer: 1024 * 1024 * 10 });
+    return;
+  }
+
+  await execFileAsync('tar', ['-czf', outputFile, ...entries], { cwd, maxBuffer: 1024 * 1024 * 10 });
+}
+
+async function getProjectArchiveName(resource: vscode.Uri) {
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(resource);
+  const workspaceRoot = workspaceFolder?.uri.fsPath ?? resource.fsPath;
+  const packageJsonUri = vscode.Uri.file(path.join(workspaceRoot, 'package.json'));
+
+  try {
+    const content = await vscode.workspace.fs.readFile(packageJsonUri);
+    const packageJson = JSON.parse(Buffer.from(content).toString('utf8')) as { name?: unknown };
+
+    if (typeof packageJson.name === 'string' && packageJson.name.trim()) {
+      return sanitizeFileName(packageJson.name);
+    }
+  } catch {
+    // 没有 package.json 或解析失败时，回退到工作区/目录名。
+  }
+
+  return sanitizeFileName(path.basename(workspaceRoot));
+}
+
+async function getUniqueArchiveFileName(outputDir: string, baseName: string, extension: string) {
+  return path.basename(await getUniqueArchivePath(outputDir, `${baseName}${extension}`, extension));
+}
+
+async function getUniqueArchivePath(outputDir: string, fileName: string, extension: string) {
+  const normalizedFileName = ensureArchiveExtension(fileName, extension);
+  const baseName = normalizedFileName.slice(0, -extension.length);
+  let candidate = path.join(outputDir, normalizedFileName);
+  let index = 1;
+
+  while (await fileExists(candidate)) {
+    candidate = path.join(outputDir, `${baseName}_${index}${extension}`);
+    index += 1;
+  }
+
+  return candidate;
+}
+
+async function fileExists(file: string) {
+  try {
+    await vscode.workspace.fs.stat(vscode.Uri.file(file));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function ensureArchiveExtension(fileName: string, extension: string) {
+  return fileName.endsWith(extension) ? fileName : `${fileName}${extension}`;
+}
+
+function sanitizeFileName(value: string) {
+  return value.replace(/[\\/:*?"<>|]/g, '-').replace(/\s+/g, '-').replace(/^-+|-+$/g, '') || 'archive';
+}
+
+function formatTimestamp(date: Date) {
+  const year = date.getFullYear();
+  const month = padDatePart(date.getMonth() + 1);
+  const day = padDatePart(date.getDate());
+  const hours = padDatePart(date.getHours());
+  const minutes = padDatePart(date.getMinutes());
+  const seconds = padDatePart(date.getSeconds());
+
+  return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+}
+
+function padDatePart(value: number) {
+  return value.toString().padStart(2, '0');
+}
+
+function showArchiveCreatedMessage(outputFile: string) {
+  vscode.window.showInformationMessage(`已生成压缩包：${path.basename(outputFile)}`);
 }
 
 function getErrorMessage(error: unknown) {

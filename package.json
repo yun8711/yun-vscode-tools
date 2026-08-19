@@ -15,7 +15,9 @@
     "onCommand:yunVscodeTools.revealActiveFile",
     "onCommand:yunVscodeTools.disableExplorerAutoReveal",
     "onCommand:yunVscodeTools.copyFile",
-    "onCommand:yunVscodeTools.editCommitMessage"
+    "onCommand:yunVscodeTools.editCommitMessage",
+    "onCommand:yunVscodeTools.compressResources",
+    "onCommand:yunVscodeTools.compressChildren"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -42,6 +44,18 @@
         "title": "编辑提交消息",
         "category": "Yun VSCode Tools",
         "icon": "$(edit)"
+      },
+      {
+        "command": "yunVscodeTools.compressResources",
+        "title": "压缩",
+        "category": "Yun VSCode Tools",
+        "icon": "$(file-zip)"
+      },
+      {
+        "command": "yunVscodeTools.compressChildren",
+        "title": "压缩子文件",
+        "category": "Yun VSCode Tools",
+        "icon": "$(file-zip)"
       }
     ],
     "menus": {
@@ -62,6 +76,16 @@
           "command": "yunVscodeTools.editCommitMessage",
           "when": "resourceScheme == file",
           "group": "yun@2"
+        },
+        {
+          "command": "yunVscodeTools.compressResources",
+          "when": "resourceScheme == file",
+          "group": "yun@3"
+        },
+        {
+          "command": "yunVscodeTools.compressChildren",
+          "when": "resourceScheme == file && explorerResourceIsFolder",
+          "group": "yun@4"
         }
       ]
     }
