@@ -13,7 +13,8 @@
   "activationEvents": [
     "onStartupFinished",
     "onCommand:yunVscodeTools.revealActiveFile",
-    "onCommand:yunVscodeTools.disableExplorerAutoReveal"
+    "onCommand:yunVscodeTools.disableExplorerAutoReveal",
+    "onCommand:yunVscodeTools.copyFile"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -28,6 +29,12 @@
         "command": "yunVscodeTools.disableExplorerAutoReveal",
         "title": "关闭资源管理器自动定位",
         "category": "Yun VSCode Tools"
+      },
+      {
+        "command": "yunVscodeTools.copyFile",
+        "title": "复制文件",
+        "category": "Yun VSCode Tools",
+        "icon": "$(copy)"
       }
     ],
     "menus": {
@@ -37,15 +44,24 @@
           "when": "view == workbench.explorer.fileView",
           "group": "navigation@90"
         }
+      ],
+      "explorer/context": [
+        {
+          "command": "yunVscodeTools.copyFile",
+          "when": "resourceScheme == file && !explorerResourceIsFolder",
+          "group": "navigation@90"
+        }
       ]
     }
   },
   "scripts": {
-    "compile": "tsc -p ./",
+    "compile": "pnpm run compile:helper && tsc -p ./",
+    "compile:helper": "mkdir -p bin && clang -framework AppKit -o bin/yun-copy-files-macos native/macos-copy-files.m",
     "watch": "tsc -watch -p ./",
-    "package": "vsce package"
+    "package": "pnpm run compile && vsce package"
   },
   "devDependencies": {
+    "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
     "typescript": "^5.3.3",
     "@vscode/vsce": "^2.15.0"

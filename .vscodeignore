@@ -1,7 +1,9 @@
 .gitignore
 .vscode/**
 node_modules/**
+native/**
 src/**
 tsconfig.json
 pnpm-lock.yaml
+pnpm-workspace.yaml
 *.vsix
