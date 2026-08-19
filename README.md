@@ -16,3 +16,54 @@ VS Code/Cursor 开发辅助工具合集。
 pnpm install
 pnpm run compile
 ```
+
+## 安装使用
+
+发布到扩展市场后，可以在 VS Code 扩展面板中搜索 `Yun VSCode Tools` 安装。
+
+也可以通过本地 VSIX 安装。
+
+### 开发调试
+
+在 VS Code/Cursor 中打开本项目，按 `F5` 启动扩展开发宿主窗口。
+
+### 打包
+
+```bash
+pnpm run package
+```
+
+打包后会在项目根目录生成：
+
+```text
+yun-vscode-tools-0.0.1.vsix
+```
+
+### 安装到 VS Code
+
+```bash
+code --install-extension yun-vscode-tools-0.0.1.vsix
+```
+
+### 安装到 Cursor
+
+```bash
+cursor --install-extension yun-vscode-tools-0.0.1.vsix
+```
+
+如果命令行没有 `code` 或 `cursor` 命令，也可以在编辑器的扩展面板中选择“Install from VSIX...”并选择生成的 `.vsix` 文件。
+
+### 更新扩展
+
+修改代码后重新打包并再次安装同一个 VSIX 即可：
+
+```bash
+pnpm run package
+cursor --install-extension yun-vscode-tools-0.0.1.vsix
+```
+
+## 注意事项
+
+- `复制文件` 目前仅支持 macOS。
+- `压缩` 和 `压缩子文件` 依赖系统提供的 `zip` 和 `tar` 命令。
+- `编辑提交消息` 会重写未推送提交的 Git 历史，执行前请确认当前分支状态。

@@ -3,7 +3,13 @@
   "displayName": "Yun VSCode Tools",
   "description": "Yun 的 VS Code/Cursor 开发辅助工具合集",
   "version": "0.0.1",
-  "publisher": "yun",
+  "publisher": "liuyundev",
+  "icon": "resources/logo.png",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yun8711/yun-vscode-tools.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
