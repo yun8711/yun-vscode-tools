@@ -14,7 +14,8 @@
     "onStartupFinished",
     "onCommand:yunVscodeTools.revealActiveFile",
     "onCommand:yunVscodeTools.disableExplorerAutoReveal",
-    "onCommand:yunVscodeTools.copyFile"
+    "onCommand:yunVscodeTools.copyFile",
+    "onCommand:yunVscodeTools.editCommitMessage"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -35,6 +36,12 @@
         "title": "复制文件",
         "category": "Yun VSCode Tools",
         "icon": "$(copy)"
+      },
+      {
+        "command": "yunVscodeTools.editCommitMessage",
+        "title": "编辑提交消息",
+        "category": "Yun VSCode Tools",
+        "icon": "$(edit)"
       }
     ],
     "menus": {
@@ -49,7 +56,12 @@
         {
           "command": "yunVscodeTools.copyFile",
           "when": "resourceScheme == file && !explorerResourceIsFolder",
-          "group": "navigation@90"
+          "group": "yun@1"
+        },
+        {
+          "command": "yunVscodeTools.editCommitMessage",
+          "when": "resourceScheme == file",
+          "group": "yun@2"
         }
       ]
     }
