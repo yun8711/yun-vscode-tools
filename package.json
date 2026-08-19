@@ -1,0 +1,53 @@
+{
+  "name": "yun-vscode-tools",
+  "displayName": "Yun VSCode Tools",
+  "description": "Yun 的 VS Code/Cursor 开发辅助工具合集",
+  "version": "0.0.1",
+  "publisher": "yun",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:yunVscodeTools.revealActiveFile",
+    "onCommand:yunVscodeTools.disableExplorerAutoReveal"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "yunVscodeTools.revealActiveFile",
+        "title": "定位当前文件",
+        "category": "Yun VSCode Tools",
+        "icon": "$(target)"
+      },
+      {
+        "command": "yunVscodeTools.disableExplorerAutoReveal",
+        "title": "关闭资源管理器自动定位",
+        "category": "Yun VSCode Tools"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "yunVscodeTools.revealActiveFile",
+          "when": "view == workbench.explorer.fileView",
+          "group": "navigation@90"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.3",
+    "@vscode/vsce": "^2.15.0"
+  }
+}
