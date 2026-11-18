@@ -21,6 +21,7 @@
     "onCommand:yunVscodeTools.revealActiveFile",
     "onCommand:yunVscodeTools.disableExplorerAutoReveal",
     "onCommand:yunVscodeTools.copyFile",
+    "onCommand:yunVscodeTools.copyFileName",
     "onCommand:yunVscodeTools.editCommitMessage",
     "onCommand:yunVscodeTools.compressResources",
     "onCommand:yunVscodeTools.compressChildren"
@@ -44,6 +45,12 @@
         "title": "复制文件",
         "category": "Yun VSCode Tools",
         "icon": "$(copy)"
+      },
+      {
+        "command": "yunVscodeTools.copyFileName",
+        "title": "复制文件名",
+        "category": "Yun VSCode Tools",
+        "icon": "$(symbol-string)"
       },
       {
         "command": "yunVscodeTools.editCommitMessage",
@@ -79,19 +86,31 @@
           "group": "yun@1"
         },
         {
-          "command": "yunVscodeTools.editCommitMessage",
+          "command": "yunVscodeTools.copyFileName",
           "when": "resourceScheme == file",
           "group": "yun@2"
         },
         {
-          "command": "yunVscodeTools.compressResources",
+          "command": "yunVscodeTools.editCommitMessage",
           "when": "resourceScheme == file",
           "group": "yun@3"
         },
         {
+          "command": "yunVscodeTools.compressResources",
+          "when": "resourceScheme == file",
+          "group": "yun@4"
+        },
+        {
           "command": "yunVscodeTools.compressChildren",
           "when": "resourceScheme == file && explorerResourceIsFolder",
-          "group": "yun@4"
+          "group": "yun@5"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "yunVscodeTools.copyFileName",
+          "when": "resourceScheme == file",
+          "group": "1_cutcopypaste@10"
         }
       ]
     }

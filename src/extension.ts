@@ -45,6 +45,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('yunVscodeTools.revealActiveFile', revealActiveFile),
     vscode.commands.registerCommand('yunVscodeTools.disableExplorerAutoReveal', () => disableExplorerAutoReveal(true)),
     vscode.commands.registerCommand('yunVscodeTools.copyFile', copyFile),
+    vscode.commands.registerCommand('yunVscodeTools.copyFileName', copyFileName),
     vscode.commands.registerCommand('yunVscodeTools.editCommitMessage', editCommitMessage),
     vscode.commands.registerCommand('yunVscodeTools.compressResources', compressResources),
     vscode.commands.registerCommand('yunVscodeTools.compressChildren', compressChildren),
@@ -95,6 +96,34 @@ async function disableExplorerAutoReveal(showNotification: boolean) {
   }
 }
 
+async function copyFileName(resource?: vscode.Uri, selectedResources?: vscode.Uri[]) {
+  const uris = getExplorerFileUris(resource, selectedResources);
+  const targets = uris.length > 0 ? uris : getActiveFileUri();
+
+  if (targets.length === 0) {
+    const message =
+      vscode.window.activeTextEditor?.document.uri.scheme === 'untitled'
+        ? '当前文件尚未保存，无法复制文件名'
+        : '请选择要复制名称的文件或目录';
+    vscode.window.showInformationMessage(message);
+    return;
+  }
+
+  const names = targets.map((uri) => path.basename(uri.fsPath));
+
+  try {
+    await vscode.env.clipboard.writeText(names.join('\n'));
+    vscode.window.showInformationMessage(names.length === 1 ? `已复制文件名：${names[0]}` : `已复制 ${names.length} 个文件名`);
+  } catch (error) {
+    vscode.window.showErrorMessage(`复制文件名失败：${getErrorMessage(error)}`);
+  }
+}
+
+function getActiveFileUri() {
+  const uri = vscode.window.activeTextEditor?.document.uri;
+  return uri?.scheme === 'file' ? [uri] : [];
+}
+
 async function copyFile(resource?: vscode.Uri, selectedResources?: vscode.Uri[]) {
   if (process.platform !== 'darwin') {
     vscode.window.showWarningMessage('复制文件暂只支持 macOS');
@@ -123,12 +152,16 @@ async function copyFile(resource?: vscode.Uri, selectedResources?: vscode.Uri[])
   }
 }
 
+function isFileUri(value: unknown): value is vscode.Uri {
+  return value instanceof vscode.Uri && value.scheme === 'file';
+}
+
 function getExplorerFileUris(resource?: vscode.Uri, selectedResources?: vscode.Uri[]) {
-  const uris = selectedResources && selectedResources.length > 0 ? selectedResources : resource ? [resource] : [];
+  const uris = Array.isArray(selectedResources) && selectedResources.length > 0 ? selectedResources : isFileUri(resource) ? [resource] : [];
   const seen = new Set<string>();
 
   return uris.filter((uri) => {
-    if (uri.scheme !== 'file' || seen.has(uri.fsPath)) {
+    if (!isFileUri(uri) || seen.has(uri.fsPath)) {
       return false;
     }
 
