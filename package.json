@@ -11,7 +11,7 @@
     "url": "https://github.com/yun8711/yun-vscode-tools.git"
   },
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.100.0"
   },
   "categories": [
     "Other"
@@ -122,9 +122,9 @@
     "package": "pnpm run compile && vsce package"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
-    "@types/vscode": "^1.85.0",
-    "typescript": "^5.3.3",
-    "@vscode/vsce": "^2.15.0"
+    "@types/node": "^20.19.43",
+    "@types/vscode": "1.100.0",
+    "@vscode/vsce": "^4.1.1",
+    "typescript": "^5.9.3"
   }
 }
