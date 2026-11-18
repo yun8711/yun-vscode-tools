@@ -37,19 +37,19 @@ pnpm run package
 打包后会在项目根目录生成：
 
 ```text
-yun-vscode-tools-0.0.1.vsix
+yun-vscode-tools-0.0.2.vsix
 ```
 
 ### 安装到 VS Code
 
 ```bash
-code --install-extension yun-vscode-tools-0.0.1.vsix
+code --install-extension yun-vscode-tools-0.0.2.vsix
 ```
 
 ### 安装到 Cursor
 
 ```bash
-cursor --install-extension yun-vscode-tools-0.0.1.vsix
+cursor --install-extension yun-vscode-tools-0.0.2.vsix
 ```
 
 如果命令行没有 `code` 或 `cursor` 命令，也可以在编辑器的扩展面板中选择“Install from VSIX...”并选择生成的 `.vsix` 文件。
@@ -60,7 +60,7 @@ cursor --install-extension yun-vscode-tools-0.0.1.vsix
 
 ```bash
 pnpm run package
-cursor --install-extension yun-vscode-tools-0.0.1.vsix
+cursor --install-extension yun-vscode-tools-0.0.2.vsix
 ```
 
 ## 注意事项

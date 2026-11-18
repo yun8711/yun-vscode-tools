@@ -2,7 +2,7 @@
 
 本文件记录 Yun VSCode Tools 扩展的所有重大变更。
 
-## [Unreleased]
+## [0.0.2] - 2026-11-18
 
 ### Added
 
